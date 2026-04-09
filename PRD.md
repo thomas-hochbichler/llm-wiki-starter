@@ -23,7 +23,7 @@ The core bet: **compile knowledge once, query from the compiled result** — rat
 | Cross-references reconstructed from scratch each time | Cross-references built once, maintained continuously |
 | Humans abandon wikis — maintenance burden exceeds value | Claude handles maintenance; human directs and explores |
 | Contradictions discovered by accident | Contradictions flagged proactively during ingest |
-| Offline collection disconnected from active knowledge base | `/sync` detects and batch-ingests new sources on reconnect |
+| Offline collection disconnected from active knowledge base | `/llm-wiki:sync` detects and batch-ingests new sources on reconnect |
 
 **Who feels this pain:** A single researcher, analyst, or autodidact who accumulates sources faster than they can synthesize — reading papers, articles, books, transcripts — and loses the thread between sessions.
 
@@ -37,7 +37,7 @@ The core bet: **compile knowledge once, query from the compiled result** — rat
 - Obsidian as a zero-configuration wiki browser with graph view
 - Claude Code custom commands that reduce every recurring operation to a single invocation
 - Start with a minimal schema and co-evolve it through real usage (not a pre-specified one)
-- Detect and batch-ingest sources added offline via `/sync`
+- Detect and batch-ingest sources added offline via `/llm-wiki:sync`
 
 ### Non-Goals
 - Multi-user collaboration or shared wikis
@@ -101,7 +101,7 @@ A single person building a private knowledge base over weeks or months. They acc
 
 ### FR-1: Bootstrap
 
-**Trigger:** User runs `/bootstrap [domain description]` or equivalent prompt.
+**Trigger:** User runs `/llm-wiki:bootstrap [domain description]` or equivalent prompt.
 
 **Requirements:**
 1. Claude generates `CLAUDE.md` from the domain description using the minimal v1 schema (see FR-2 frontmatter)
@@ -124,7 +124,7 @@ A single person building a private knowledge base over weeks or months. They acc
 
 ### FR-2: Ingest
 
-**Trigger:** User runs `/ingest <filename>` or prompts "Please ingest raw/\<filename\>".
+**Trigger:** User runs `/llm-wiki:ingest <filename>` or prompts "Please ingest raw/\<filename\>".
 
 **Steps (in order):**
 1. Read source file from `raw/` — never modify
@@ -156,7 +156,7 @@ Additional fields (e.g. source confidence, quality, contradiction status) should
 
 ### FR-2b: Offline Sync (Batch Ingest)
 
-**Trigger:** User runs `/sync`.
+**Trigger:** User runs `/llm-wiki:sync`.
 
 **Requirements:**
 1. List all files in `raw/` (excluding `raw/assets/`)
@@ -191,7 +191,7 @@ Additional fields (e.g. source confidence, quality, contradiction status) should
 
 ### FR-4: Lint
 
-**Trigger:** User runs `/lint` or prompts "Please lint the wiki." Run every 5–10 sources.
+**Trigger:** User runs `/llm-wiki:lint` or prompts "Please lint the wiki." Run every 5–10 sources.
 
 **Steps:**
 1. Read `wiki/index.md` as map; read all pages (spot-check if large)
@@ -236,14 +236,14 @@ Claude updates the `## Contradictions` section body and appends the resolution t
 
 ## 7. Claude Code Commands
 
-The primary UX enhancement over the baseline BRIEF: custom slash commands in `.claude/commands/` reduce every workflow to a single invocation. These are markdown files containing the exact prompt Claude should execute — they are generated during bootstrap and co-evolved with `CLAUDE.md`.
+The primary UX enhancement over the baseline BRIEF: custom slash commands in `.claude/commands/llm-wiki/` reduce every workflow to a single invocation. These are markdown files containing the exact prompt Claude should execute — they are generated during bootstrap and co-evolved with `CLAUDE.md`.
 
 | Command | File | Description |
 |---|---|---|
-| `/bootstrap` | `.claude/commands/bootstrap.md` | Prompt: domain → generates CLAUDE.md + full directory structure + seeds overview.md |
-| `/ingest` | `.claude/commands/ingest.md` | Accepts filename argument → runs full 9-step FR-2 ingest workflow, including session-end validation |
-| `/sync` | `.claude/commands/sync.md` | Diffs raw/ against log.md → lists new files → confirms → batch-ingests sequentially → session-end validation |
-| `/lint` | `.claude/commands/lint.md` | Runs full FR-4 lint operation → outputs report to chat |
+| `/llm-wiki:bootstrap` | `.claude/commands/llm-wiki/bootstrap.md` | Prompt: domain → generates CLAUDE.md + full directory structure + seeds overview.md |
+| `/llm-wiki:ingest` | `.claude/commands/llm-wiki/ingest.md` | Accepts filename argument → runs full 9-step FR-2 ingest workflow, including session-end validation |
+| `/llm-wiki:sync` | `.claude/commands/llm-wiki/sync.md` | Diffs raw/ against log.md → lists new files → confirms → batch-ingests sequentially → session-end validation |
+| `/llm-wiki:lint` | `.claude/commands/llm-wiki/lint.md` | Runs full FR-4 lint operation → outputs report to chat |
 
 **Command design principles:**
 - Each command file is a self-contained prompt — it references the relevant FR sections of CLAUDE.md
@@ -255,7 +255,7 @@ The primary UX enhancement over the baseline BRIEF: custom slash commands in `.c
 
 ## 8. Claude Code Hooks
 
-**No hooks in v1.** Validation happens as the final step of the `/ingest` and `/sync` command prompts (see FR-2 step 9 and FR-2b step 7). A PostToolUse hook would fire on every mid-ingest write and produce noise on intermediate states — the session-end check gives the same guarantee with no settings.json to keep in sync when the schema evolves. Hooks can be introduced later if real usage reveals a gap the session-end check can't cover.
+**No hooks in v1.** Validation happens as the final step of the `/llm-wiki:ingest` and `/llm-wiki:sync` command prompts (see FR-2 step 9 and FR-2b step 7). A PostToolUse hook would fire on every mid-ingest write and produce noise on intermediate states — the session-end check gives the same guarantee with no settings.json to keep in sync when the schema evolves. Hooks can be introduced later if real usage reveals a gap the session-end check can't cover.
 
 ---
 
@@ -273,7 +273,7 @@ CLAUDE.md        ← Schema layer. Tells Claude how the wiki is structured and w
 
 ```
 .claude/
-  commands/             ← Custom slash commands (generated during bootstrap, co-evolved with CLAUDE.md)
+  commands/llm-wiki/    ← Custom slash commands (generated during bootstrap, co-evolved with CLAUDE.md)
   schema-history.md     ← Rotated CLAUDE.md Schema History entries (created when CLAUDE.md exceeds 20 entries)
   settings.json         ← Empty/unused in v1; reserved for future hooks if needed
 ```
@@ -285,7 +285,7 @@ CLAUDE.md        ← Schema layer. Tells Claude how the wiki is structured and w
 | `raw/` | Human | Claude reads only, never writes |
 | `wiki/` | Claude (primary) | Human reads primarily; direct edits allowed if flagged to Claude on the next prompt so it doesn't unknowingly overwrite |
 | `CLAUDE.md` | Co-owned | Human and Claude refine together; Schema History tracks changes |
-| `.claude/commands/` | Claude (generated) | Human may inspect; Claude updates when schema evolves |
+| `.claude/commands/llm-wiki/` | Claude (generated) | Human may inspect; Claude updates when schema evolves |
 | `.claude/schema-history.md` | Claude | Rotated Schema History entries once CLAUDE.md exceeds 20 (keeps CLAUDE.md small) |
 | `.claude/settings.json` | Human | Empty/unused in v1; reserved for future hooks if needed |
 | `.obsidian/` | Obsidian | Neither human nor Claude modifies directly |
@@ -300,13 +300,13 @@ CLAUDE.md        ← Schema layer. Tells Claude how the wiki is structured and w
 - **Status:** Complete
 
 ### Phase 1 — Bootstrap
-- Generate `CLAUDE.md` for a test domain (using `/bootstrap`)
+- Generate `CLAUDE.md` for a test domain (using `/llm-wiki:bootstrap`)
 - Create full directory structure
-- Create 4 slash command files in `.claude/commands/` (`bootstrap`, `ingest`, `sync`, `lint`)
+- Create 4 slash command files in `.claude/commands/llm-wiki/` (`bootstrap`, `ingest`, `sync`, `lint`)
 - **Acceptance:** All four commands invoke without error; directory structure is correct; log has bootstrap entry; `overview.md` has `## Current Thesis` and `## Thesis History` sections
 
 ### Phase 2 — First Ingest Cycle
-- Run `/ingest` on 2–3 test sources
+- Run `/llm-wiki:ingest` on 2–3 test sources
 - Verify: 10–15 files touched per source, frontmatter complete, index updated, log has entries
 - Open Obsidian graph view — should show initial cluster structure
 - **Acceptance:** Dataview query `WHERE type = "source"` returns all ingested sources
@@ -317,14 +317,14 @@ CLAUDE.md        ← Schema layer. Tells Claude how the wiki is structured and w
 - **Acceptance:** `wiki/sources/` + `wiki/concepts/` + `wiki/entities/` all have non-trivial cross-links
 
 ### Phase 4 — Lint + Schema Refinement
-- Run `/lint` after 5 ingests
+- Run `/llm-wiki:lint` after 5 ingests
 - Resolve or accept-tension all flagged contradictions
 - Update `CLAUDE.md` with `## Schema History` entry
 - **Acceptance:** All flagged contradictions have been either resolved or explicitly accepted-tension in each page's `## Contradictions` section; CLAUDE.md has at least one Schema History entry
 
 ### Phase 5 — Offline Sync Validation
 - Add 3+ sources to `raw/` without an active Claude session
-- Reconnect, run `/sync`
+- Reconnect, run `/llm-wiki:sync`
 - Verify: new files detected, batch ingest completes, summary reported
 - **Acceptance:** `wiki/log.md` contains ingest entries for each new source, `wiki/index.md` lists every page the batch created, and a quick count of `## [*] ingest |` entries matches the total source count
 
@@ -350,7 +350,7 @@ CLAUDE.md        ← Schema layer. Tells Claude how the wiki is structured and w
 | index.md is complete | Every wiki page has an entry | Phase 2+ |
 | Frontmatter is consistent | Dataview queries `type` and `tags` without errors | Phase 2+ |
 | CLAUDE.md has been refined at least once | Has `## Schema History` entry | Phase 4 |
-| `/sync` detects offline additions | Correct diff, correct batch ingest | Phase 5 |
+| `/llm-wiki:sync` detects offline additions | Correct diff, correct batch ingest | Phase 5 |
 
 ### Qualitative
 
@@ -489,9 +489,9 @@ The 5–10 most-linked entities and concepts (updated after every lint run).
 
 ## Appendix B: Slash Command Templates
 
-Command files live in `.claude/commands/`. They are created during bootstrap and updated with `CLAUDE.md`.
+Command files live in `.claude/commands/llm-wiki/`. They are created during bootstrap and updated with `CLAUDE.md`.
 
-### `/ingest` (`.claude/commands/ingest.md`)
+### `/llm-wiki:ingest` (`.claude/commands/llm-wiki/ingest.md`)
 ```markdown
 Please ingest the source file at `raw/$ARGUMENTS` following the full ingest workflow defined in CLAUDE.md:
 1. Read the source file
@@ -505,7 +505,7 @@ Please ingest the source file at `raw/$ARGUMENTS` following the full ingest work
 9. Session-end validation: verify every touched page is listed in wiki/index.md with a one-line summary, and that all required frontmatter fields are present on every page written. Fix any gaps in the same session.
 ```
 
-### `/sync` (`.claude/commands/sync.md`)
+### `/llm-wiki:sync` (`.claude/commands/llm-wiki/sync.md`)
 ```markdown
 Run an offline sync to detect and ingest any new sources added to raw/ since the last session:
 1. List all files in raw/ (excluding raw/assets/)
@@ -517,7 +517,7 @@ Run an offline sync to detect and ingest any new sources added to raw/ since the
 7. Session-end validation: verify every page touched during the batch is listed in wiki/index.md, and required frontmatter fields are present on every write. Fix any gaps in the same session.
 ```
 
-### `/lint` (`.claude/commands/lint.md`)
+### `/llm-wiki:lint` (`.claude/commands/llm-wiki/lint.md`)
 ```markdown
 Run a full lint pass on the wiki following the lint workflow in CLAUDE.md:
 1. Read wiki/index.md as a map; read all pages (spot-check if > 50 pages)

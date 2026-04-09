@@ -1,6 +1,6 @@
 Run a full lint pass on the wiki.
 
-Follow FR-4 in PRD.md. Run this every 5–10 sources. Output the report as a markdown block in chat — **do not** auto-file it unless the user explicitly asks.
+Run this every 5–10 sources. Output the report as a markdown block in chat — **do not** auto-file it unless the user explicitly asks.
 
 ## Step 1 — Map the wiki
 

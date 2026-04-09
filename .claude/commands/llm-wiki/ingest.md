@@ -1,6 +1,6 @@
 Ingest the source file `raw/$ARGUMENTS` into the wiki.
 
-Follow the full 9-step workflow from FR-2 in PRD.md and the schema in CLAUDE.md.
+Follow the full 9-step workflow below. Read `CLAUDE.md` for the directory layout and frontmatter schema.
 
 ## Step 1 — Read the source
 
@@ -17,7 +17,7 @@ Skip this step ONLY if the user has said "skip discuss" or "batch-ingest these" 
 
 ## Step 3 — Write the source page
 
-Create `wiki/sources/<slug>.md` using the Appendix A source template:
+Create `wiki/sources/<slug>.md` using this template:
 
 ```markdown
 ---
@@ -52,12 +52,56 @@ All six frontmatter fields are required. `<slug>` should be a lowercase, hyphena
 ## Step 4 — Entity pages
 
 Identify every person, organization, product, and place mentioned in the source. For each:
-- If `wiki/entities/<slug>.md` does not exist, create it from the Appendix A entity template.
+- If `wiki/entities/<slug>.md` does not exist, create it using this template:
+
+```markdown
+---
+type: entity
+title: <Entity Name>
+tags: [tag1, tag2]
+sources: [source-slug.md]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+
+## What They Did / What It Is
+<one-paragraph description of the entity and their role or nature>
+
+## Appearances
+- [[source-slug]] — one-line note on how they appear in this source
+
+## Related
+- [[Related Page]]
+```
+
 - If it exists, update the `## What They Did / What It Is`, `## Appearances`, and `## Related` sections to incorporate what this source adds. Bump `updated:` to today. Append this source's slug to the `sources:` frontmatter list if not already present.
 
 ## Step 5 — Concept pages
 
-Identify every idea, framework, methodology, or topic. Same create-or-update logic as Step 4, using the Appendix A concept template and `wiki/concepts/<slug>.md`.
+Identify every idea, framework, methodology, or topic. Same create-or-update logic as Step 4, using this template and `wiki/concepts/<slug>.md`:
+
+```markdown
+---
+type: concept
+title: <Concept Name>
+tags: [tag1, tag2]
+sources: [source-slug.md]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+
+## Definition
+<one-paragraph definition of the concept>
+
+## How It's Used
+<how this concept appears or is applied across sources>
+
+## Appearances
+- [[source-slug]] — one-line note on how this concept appears in this source
+
+## Related
+- [[Related Page]]
+```
 
 ## Step 5.5 — Typed edges
 

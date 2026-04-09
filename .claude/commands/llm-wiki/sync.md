@@ -1,7 +1,5 @@
 Offline sync: detect any sources added to `raw/` since the last session and batch-ingest them.
 
-Follow FR-2b in PRD.md.
-
 ## Step 1 — List files in `raw/`
 
 List every file under `raw/` recursively, **excluding** anything inside `raw/assets/`. Normalize to filenames (basenames or paths relative to `raw/`, whichever is consistently used in `log.md`).
@@ -39,7 +37,7 @@ Wait for confirmation. If the user picks a subset, use only those.
 
 ## Step 5 — Sequential batch ingest
 
-For each file in the confirmed list, run the full FR-2 ingest workflow (see `.claude/commands/ingest.md`). The Discuss step (FR-2 step 2) applies per-source **unless** the user said "skip discuss" or "batch-ingest these" — in a `/sync` context those phrases skip Discuss for the entire batch.
+For each file in the confirmed list, run the full FR-2 ingest workflow (see `.claude/commands/llm-wiki/ingest.md`). The Discuss step (FR-2 step 2) applies per-source **unless** the user said "skip discuss" or "batch-ingest these" — in a `/llm-wiki:sync` context those phrases skip Discuss for the entire batch.
 
 Between sources, give a brief progress line: *"[3/5] Ingesting <title>..."*.
 

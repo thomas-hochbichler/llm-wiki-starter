@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Obsidian workspace state (user-specific, not part of the scaffold)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# User wiki content — the scaffold ships without content; wikis live in user vaults
+raw/
+wiki/
+CLAUDE.md
+
+# Common source file types that end up in raw/ (large binaries)
+*.pdf
+*.epub
+*.docx
+*.pptx
+
+# Editor
+.vscode/
+*.swp
+*.swo

@@ -1,6 +1,6 @@
 Bootstrap a new LLM Wiki for the domain: `$ARGUMENTS`
 
-Follow FR-1 in PRD.md. Do this in one session, without asking the user to confirm individual file writes.
+Do this in one session, without asking the user to confirm individual file writes.
 
 ## Step 1 — Domain
 
@@ -16,7 +16,7 @@ Capture the answer. An empty answer is fine.
 
 ## Step 3 — Generate `CLAUDE.md` at the repo root
 
-Create `CLAUDE.md` with the following sections. Keep it concise — this is the schema layer, not the PRD.
+Create `CLAUDE.md` with the following sections. Keep it concise — this is the runtime schema.
 
 ```markdown
 # CLAUDE.md — LLM Wiki Schema
@@ -27,7 +27,7 @@ Create `CLAUDE.md` with the following sections. Keep it concise — this is the 
 ## Purpose
 This is an LLM-maintained wiki. Claude reads sources from `raw/`, compiles them into structured markdown under `wiki/`, and maintains cross-references, contradictions, and synthesis as new sources arrive. The wiki is browsed in Obsidian.
 
-See `PRD.md` for full requirements. This file is the runtime schema.
+This file is the runtime schema — all workflows read it for directory layout, frontmatter rules, and relation format.
 
 ## Directory Layout
 - `raw/` — immutable source documents. Claude reads only, never writes (except `raw/assets/` which the user manages).
@@ -38,7 +38,7 @@ See `PRD.md` for full requirements. This file is the runtime schema.
   - `wiki/overview.md` — current thesis, open questions, contradictions, key hubs
   - `wiki/index.md` — catalog of every wiki page with one-line summaries
   - `wiki/log.md` — append-only operation log
-- `.claude/commands/` — slash commands (`/bootstrap`, `/ingest`, `/sync`, `/lint`)
+- `.claude/commands/llm-wiki/` — slash commands (`/llm-wiki:bootstrap`, `/llm-wiki:ingest`, `/llm-wiki:sync`, `/llm-wiki:lint`)
 
 ## v1 Frontmatter Schema
 Every wiki page MUST have these six fields:
@@ -55,25 +55,24 @@ updated: YYYY-MM-DD
 Additional fields are added only when a real lint session reveals the need — not speculated up-front. Any addition is recorded in `## Schema History` below.
 
 ## Page Templates
-Use the templates in PRD.md Appendix A for source, entity, concept, and overview pages. Every page type carries the six required frontmatter fields above.
+Use the inline templates in the `/llm-wiki:ingest` command for source, entity, and concept pages, and the template in Step 4 of this command for the overview page. Every page type carries the six required frontmatter fields above.
 
 ## Workflows
-- **Ingest (`/ingest <filename>`):** Read `raw/<filename>`, discuss framing with the user, write source/entity/concept pages, update `overview.md` if synthesis shifts, update `index.md`, append to `log.md`, validate at session end. Expected scope: 10–15 files touched per source. Full spec: PRD.md §6 FR-2.
-- **Sync (`/sync`):** Diff `raw/` against `log.md` ingest entries, batch-ingest new files sequentially. PRD.md §6 FR-2b.
-- **Query (natural language):** Read `index.md`, synthesize from relevant pages, cite with `[[wikilinks]]`, file the answer as a `query` or `synthesis` page unless user says "don't file this." PRD.md §6 FR-3.
-- **Lint (`/lint`):** Flag contradictions, orphans, stale content, concept gaps, missing cross-references. Output as chat markdown, don't auto-file. Run every 5–10 sources. PRD.md §6 FR-4.
+- **Ingest (`/llm-wiki:ingest <filename>`):** Read `raw/<filename>`, discuss framing with the user, write source/entity/concept pages, update `overview.md` if synthesis shifts, update `index.md`, append to `log.md`, validate at session end. Expected scope: 10–15 files touched per source.
+- **Sync (`/llm-wiki:sync`):** Diff `raw/` against `log.md` ingest entries, batch-ingest new files sequentially.
+- **Query (natural language):** Read `index.md`, synthesize from relevant pages, cite with `[[wikilinks]]`, file the answer as a `query` or `synthesis` page unless user says "don't file this."
+- **Lint (`/llm-wiki:lint`):** Flag contradictions, orphans, stale content, concept gaps, missing cross-references. Output as chat markdown, don't auto-file. Run every 5–10 sources.
 
 ## Discuss Step
 Claude discusses key takeaways and framing before filing pages, by default. Skip only when the user says "skip discuss" or "batch-ingest these."
 
-## Ownership Rules (PRD.md §9)
+## Ownership Rules
 | Layer | Owned By | Rule |
 |---|---|---|
 | `raw/` | Human | Claude reads only |
 | `wiki/` | Claude (primary) | Human may edit directly but must flag on the next prompt |
 | `CLAUDE.md` | Co-owned | Schema History tracks changes |
-| `.claude/commands/` | Claude (generated) | Updated when schema evolves |
-| `BRIEF.md`, `PRD.md` | Human | Reference only — Claude reads, never modifies |
+| `.claude/commands/llm-wiki/` | Claude (generated) | Updated when schema evolves |
 
 ## Contradiction Handling
 When conflicting claims are found across pages, add a `## Contradictions` section to each affected page with the conflicting claim, the opposing source, and a status: `open` → `investigating` → `resolved` or `accepted-tension`. Resolution is decided by the user; Claude updates the section and appends the resolution to `log.md`.
@@ -118,7 +117,7 @@ wiki/overview.md
 ```markdown
 # Wiki Index
 
-Catalog of every wiki page with one-line summaries. Claude updates this on every `/ingest`, `/sync`, and query-filing.
+Catalog of every wiki page with one-line summaries. Claude updates this on every `/llm-wiki:ingest`, `/llm-wiki:sync`, and query-filing.
 
 ## Sources
 <!-- - [[source-slug]] — one-line summary -->
@@ -149,7 +148,7 @@ Replace `YYYY-MM-DD` with today's date and `<domain>` with the domain descriptio
 
 ### `wiki/overview.md` content
 
-Use the Appendix A overview template. If the user gave a thesis in Step 2, put it under `## Current Thesis`. If empty, leave one line: *"No position yet — seed this after the first 5–10 sources."*
+Use this template. If the user gave a thesis in Step 2, put it under `## Current Thesis`. If empty, leave one line: *"No position yet — seed this after the first 5–10 sources."*
 
 ```markdown
 ## Current Thesis
@@ -180,4 +179,4 @@ Before reporting completion, verify:
 - [ ] `wiki/overview.md` contains both `## Current Thesis` and `## Thesis History`
 - [ ] `wiki/log.md` contains the bootstrap entry with today's date
 
-Report the final structure to the user and suggest the next step: *"Drop a source into `raw/` and run `/ingest <filename>` — or collect a few offline and run `/sync` when you're back."*
+Report the final structure to the user and suggest the next step: *"Drop a source into `raw/` and run `/llm-wiki:ingest <filename>` — or collect a few offline and run `/llm-wiki:sync` when you're back."*
